@@ -27,7 +27,7 @@ For loops I'm introducing a new pattern, since the currently used patterns are, 
 
 So this is an example which is the well known Sophie Scarf:
 
-´´´
+```
 co6
 {
     {
@@ -49,7 +49,7 @@ k2 skp slyf3
     k? slyf3
 }5
 bol3 bor3
-´´´
+```
 
 ## Example Code
 
