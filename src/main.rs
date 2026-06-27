@@ -18,6 +18,10 @@ use crossterm::{
 };
 use std::io::{self, Write};
 
+mod ast;
+mod parser;
+mod formatter;
+
 fn main() {
     // Collect CLI arguments
     let args: Vec<String> = env::args().collect();
@@ -31,13 +35,118 @@ fn main() {
     let file_path = &args[1];
     println!("Reading file: {}", file_path);
 
-    match process_file(file_path) {
-        Ok(vec) => navigate_vector(vec).unwrap(),
-        Err(e) => eprintln!("Error processing file: {}", e),
-    }
+    let content = fs::read_to_string(file_path).expect("Failed to read file");
+
+    let pattern = parser::parse(&content).unwrap();
+
+    //let formatted = formatter::format(&pattern);
+    //let _ = navigate_vector(formatted);
 }
 
-fn process_file(path: &str) -> io::Result<Vec<String>> {
+fn navigate_vector(rows: Vec<String>) -> io::Result<()> {
+    if rows.is_empty() {
+        println!("The vector is empty.");
+        return Ok(());
+    }
+
+    let mut stdout = io::stdout();
+    
+    // Enable raw mode so we can capture key presses immediately without waiting for Enter
+    terminal::enable_raw_mode()?;
+    execute!(stdout, cursor::Hide)?;
+
+    //let mut stitches: Vec<i16> = Vec::new();
+    //let mut stitchcount: i16 = 0;
+
+    /*for row in &rows {
+        for stitch in row.split_whitespace() {
+            let first_digit_idx = stitch.find(|c: char| c.is_ascii_digit());
+
+            let (command, multiplier_str) = match first_digit_idx {
+                Some(idx) => (&stitch[..idx], &stitch[idx..]),
+                None => (stitch, ""), // No numbers found, multiplier string is empty
+            };
+
+            // 2. Parse the multiplier, defaulting to 1 if none was provided
+            let multiplier = multiplier_str.parse::<i16>().unwrap_or(1);
+
+            // 3. Match the command and update your counter
+            match command {
+                "co" | "kfb" => { 
+                    // e.g., "inc3" or "p"
+                    stitchcount += multiplier;
+                }
+                "skp" | "bol" | "bor" => { 
+                    // e.g., "dec2" or "k5"
+                    stitchcount -= multiplier;
+                }
+                _ => {}
+        }
+        }
+        stitches.push(stitchcount);
+    }*/
+
+    let mut index = 0;
+
+    loop {
+        // Clear the screen and reset cursor to top-left
+        execute!(
+            stdout,
+            Clear(ClearType::All),
+            cursor::MoveTo(0, 0)
+        )?;
+
+        // Print current item and navigation status
+        print!("\rRow {} of {}\n", index + 1, rows.len());
+        //print!("\r{} stitches on needle\n", stitches[index]);
+        print!("\r---------------------\n");
+        print!("\r\n\r{}\n\r\n", rows[index].trim());
+        print!("\r---------------------\n");
+        print!("\rControls: [Enter / ↓] Next  |  [↑] Previous  |  [Esc / Q] Quit\n");
+
+        stdout.flush()?;
+
+        // Wait for a key event
+        if let Event::Key(KeyEvent { code, modifiers, .. }) = event::read()? {
+            // Support Ctrl+C to quit just in case
+            if modifiers.contains(KeyModifiers::CONTROL) && code == KeyCode::Char('c') {
+                break;
+            }
+
+            match code {
+                // Step Forward
+                KeyCode::Enter | KeyCode::Down => {
+                    if index < rows.len() - 1 {
+                        index += 1;
+                    }
+                }
+                // Step Backward
+                KeyCode::Up => {
+                    if index > 0 {
+                        index -= 1;
+                    }
+                }
+                // Exit conditions
+                KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('Q') => {
+                    break;
+                }
+                _ => {} // Ignore any other keys
+            }
+        }
+    }
+
+    // Clean up: Restore terminal settings back to normal
+    execute!(stdout, cursor::Show)?;
+    terminal::disable_raw_mode()?;
+    
+    // Clear the final state so the terminal is clean
+    execute!(io::stdout(), Clear(ClearType::All), cursor::MoveTo(0, 0))?;
+    println!("Exited viewer.");
+    
+    Ok(())
+}
+
+/*fn process_file(path: &str) -> io::Result<Vec<String>> {
     // Read entire file content into memory
     let content = fs::read_to_string(path)?;
     
@@ -99,107 +208,4 @@ fn process_file(path: &str) -> io::Result<Vec<String>> {
 
     // Return the completed, flattened vector
     Ok(stack.pop().unwrap())
-}
-
-fn navigate_vector(rows: Vec<String>) -> io::Result<()> {
-    if rows.is_empty() {
-        println!("The vector is empty.");
-        return Ok(());
-    }
-
-    let mut stdout = io::stdout();
-    
-    // Enable raw mode so we can capture key presses immediately without waiting for Enter
-    terminal::enable_raw_mode()?;
-    execute!(stdout, cursor::Hide)?;
-
-    let mut stitches: Vec<i16> = Vec::new();
-    let mut stitchcount: i16 = 0;
-
-    for row in &rows {
-        for stitch in row.split_whitespace() {
-            let first_digit_idx = stitch.find(|c: char| c.is_ascii_digit());
-
-            let (command, multiplier_str) = match first_digit_idx {
-                Some(idx) => (&stitch[..idx], &stitch[idx..]),
-                None => (stitch, ""), // No numbers found, multiplier string is empty
-            };
-
-            // 2. Parse the multiplier, defaulting to 1 if none was provided
-            let multiplier = multiplier_str.parse::<i16>().unwrap_or(1);
-
-            // 3. Match the command and update your counter
-            match command {
-                "co" | "kfb" => { 
-                    // e.g., "inc3" or "p"
-                    stitchcount += multiplier;
-                }
-                "skp" | "bol" | "bor" => { 
-                    // e.g., "dec2" or "k5"
-                    stitchcount -= multiplier;
-                }
-                _ => {}
-        }
-        }
-        stitches.push(stitchcount);
-    }
-
-    let mut index = 0;
-
-    loop {
-        // Clear the screen and reset cursor to top-left
-        execute!(
-            stdout,
-            Clear(ClearType::All),
-            cursor::MoveTo(0, 0)
-        )?;
-
-        // Print current item and navigation status
-        print!("\rRow {} of {}\n", index + 1, rows.len());
-        print!("\r{} stitches on needle\n", stitches[index]);
-        print!("\r---------------------\n");
-        print!("\r\n\r{}\n\r\n", rows[index].trim());
-        print!("\r---------------------\n");
-        print!("\rControls: [Enter / ↓] Next  |  [↑] Previous  |  [Esc / Q] Quit\n");
-
-        stdout.flush()?;
-
-        // Wait for a key event
-        if let Event::Key(KeyEvent { code, modifiers, .. }) = event::read()? {
-            // Support Ctrl+C to quit just in case
-            if modifiers.contains(KeyModifiers::CONTROL) && code == KeyCode::Char('c') {
-                break;
-            }
-
-            match code {
-                // Step Forward
-                KeyCode::Enter | KeyCode::Down => {
-                    if index < rows.len() - 1 {
-                        index += 1;
-                    }
-                }
-                // Step Backward
-                KeyCode::Up => {
-                    if index > 0 {
-                        index -= 1;
-                    }
-                }
-                // Exit conditions
-                KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('Q') => {
-                    break;
-                }
-                _ => {} // Ignore any other keys
-            }
-        }
-    }
-
-    // Clean up: Restore terminal settings back to normal
-    execute!(stdout, cursor::Show)?;
-    terminal::disable_raw_mode()?;
-    
-    // Clear the final state so the terminal is clean
-    execute!(io::stdout(), Clear(ClearType::All), cursor::MoveTo(0, 0))?;
-    println!("Exited viewer.");
-    
-    Ok(())
-}
+}*/
