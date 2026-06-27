@@ -5,7 +5,7 @@
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>knitlang webapp</title>
-        <script src="knitlang.js"></script>
+        <script type="module" src="main.js"></script>
         <style>
             @font-face {
                 font-family: "Montserrat";
@@ -105,10 +105,25 @@
                 position: relative;
                 text-align: center;
                 font-weight: 400;
-                font-size: 2.5rem;
-                color: hsl(140, 72%, 45%);
+                font-size: 1rem;
+                color: hsl(140, 22%, 45%);
                 box-shadow: 0 0 5px gray;
                 border-radius: 1rem;
+                display: flex;
+                justify-content: center;
+                gap: 3rem;
+            }
+
+            .container {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-end;
+            }
+
+            .multiplier {
+                color: hsl(140, 72%, 45%);
+                font-size: 5rem;
             }
 
             #buttons {
