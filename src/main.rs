@@ -35,12 +35,12 @@ fn main() {
     let file_path = &args[1];
     println!("Reading file: {}", file_path);
 
-    let content = fs::read_to_string(file_path).expect("Failed to read file");
+    let content: String = fs::read_to_string(file_path).expect("Failed to read file");
 
-    let pattern = parser::parse(&content).unwrap();
+    let pattern: ast::Pattern = ast::Pattern::new(&content);
 
-    //let formatted = formatter::format(&pattern);
-    //let _ = navigate_vector(formatted);
+    let formatted: Vec<String> = formatter::format(&pattern);
+    let _ = navigate_vector(formatted);
 }
 
 fn navigate_vector(rows: Vec<String>) -> io::Result<()> {

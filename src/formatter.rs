@@ -1,33 +1,23 @@
-/*use crate::ast::{Pattern, Row, RowContent, flatten_rows};
+use crate::ast::{Pattern, Row};
 
 pub fn format(pattern: &Pattern) -> Vec<String> {
     let mut rows: Vec<String> = Vec::new();
-    let flattened = flatten_rows(pattern.rows.clone());
-    for row in &flattened {
+    for row in &pattern.rows {
         rows.push(format_row(row));
     }
     rows
 }
 
 fn format_row(row: &Row) -> String {
-    match &row.content {
-        RowContent::Instructions(instructions) => {
-            let mut instructions_str = String::new();
-            for inst in instructions {
-                let multi = match &inst.multiplier {
-                    Some(value) => {
-                        value.to_string()
-                    }
-                    None => {
-                        "?".to_string()
-                    }
-                };
-                instructions_str.push_str(&(inst.key.clone() + &multi + " "));
-            }
-            instructions_str
-        }
-        RowContent::Rows(_) => {
-            panic!("Nested loops should be flattened")
-        }
+    let mut return_str: String = String::new();
+    for instruction in &row.instructions {
+        let multiplier_str: String = instruction.multiplier
+            .map(|m| m.to_string())
+            .unwrap_or_else(|| "?".to_string());
+        return_str += &multiplier_str;
+        return_str += " x ";
+        return_str += &instruction.en.to_string();
+        return_str += "\t";
     }
-}*/
+    return_str
+}
